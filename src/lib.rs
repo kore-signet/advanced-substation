@@ -134,17 +134,34 @@ pub trait LineItem<const MAX_FIELDS: usize> {
     ) -> Option<Self::Item<'data>>;
 }
 
-pub struct LineStreamParser {}
-
-
-pub struct LineStreamSectionIter<
-    'data,
-    'borrow,
-    const MAX_FIELDS: usize,
-    L: LineItem<MAX_FIELDS>,
-> {
-    pub title: &'data str,
+pub struct LineStreamParser<const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> {
     field_order: [L::Fields; MAX_FIELDS],
+}
+
+impl<const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> LineStreamParser<MAX_FIELDS, L> {
+    pub fn new(format_line: &str) -> Option<LineStreamParser<MAX_FIELDS, L>> {
+        let mut field_order = [L::Fields::default(); MAX_FIELDS];
+        for (idx, field) in format_line.split(',').enumerate() {
+            field_order[idx] = L::Fields::from_str(field.trim()).ok()?;
+        }
+
+        Some(LineStreamParser { field_order })
+    }
+
+    pub fn parse_line<'data>(&self, key: &'data str, values: &'data str) -> Option<L::Item<'data>> {
+        let mut fields: [(L::Fields, OptionStr<'data>); MAX_FIELDS] =
+            array::from_fn(|idx| (self.field_order[idx], None));
+        for (idx, value) in values.splitn(MAX_FIELDS, ',').enumerate() {
+            fields[idx].1 = Some(value.trim().into());
+        }
+
+        L::parse_from_fields(key, fields)
+    }
+}
+
+pub struct LineStreamSectionIter<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> {
+    pub title: &'data str,
+    parser: LineStreamParser<MAX_FIELDS, L>,
     inner: RawSectionIterator<'data, 'borrow>,
 }
 
@@ -163,14 +180,11 @@ impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>>
             return None;
         }
 
-        let mut field_order = [L::Fields::default(); MAX_FIELDS];
-        for (idx, field) in format_line.split(',').enumerate() {
-            field_order[idx] = L::Fields::from_str(field.trim()).ok()?;
-        }
+        let parser = LineStreamParser::new(format_line)?;
 
         Some(LineStreamSectionIter {
             title: inner.title,
-            field_order,
+            parser,
             inner,
         })
     }
@@ -182,18 +196,7 @@ impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> Iterator
     type Item = L::Item<'data>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let (key, values) = self.inner.next()?;
-
-            let mut fields: [(L::Fields, OptionStr<'data>); MAX_FIELDS] =
-                array::from_fn(|idx| (self.field_order[idx], None));
-            for (idx, value) in values.splitn(MAX_FIELDS, ',').enumerate() {
-                fields[idx].1 = Some(value.trim().into());
-            }
-
-            if let Some(v) = L::parse_from_fields(key, fields) {
-                return Some(v);
-            }
-        }
+        self.inner
+            .find_map(|(key, values)| self.parser.parse_line(key, values))
     }
 }

@@ -8,7 +8,7 @@ use ssa::{
 };
 
 fn main() {
-    let data = std::fs::read_to_string(std::env::args().skip(1).next().unwrap()).unwrap();
+    let data = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
     let mut parser = SSAParser::new(&data);
 
     let parsed = parser
@@ -19,7 +19,7 @@ fn main() {
     println!("{:#?}", parsed);
 
     let style_section = loop {
-        let mut section = parser.section().unwrap();
+        let section = parser.section().unwrap();
         if Style::validate_section_name(section.title) {
             break section;
         } else {

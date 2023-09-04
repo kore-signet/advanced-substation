@@ -88,8 +88,7 @@ impl Default for StyleFields {
 impl<'data> LineItem<MAX_FIELDS> for Style<'data> {
     type Fields = StyleFields;
 
-    type Item<'a>
-     = Style<'a>;
+    type Item<'a> = Style<'a>;
 
     fn parse_from_fields<'a>(
         key: &'a str,
