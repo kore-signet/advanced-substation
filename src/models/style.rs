@@ -85,16 +85,16 @@ impl Default for StyleFields {
     }
 }
 
-impl<'data> LineItem<'data, MAX_FIELDS> for Style<'data> {
+impl<'data> LineItem<MAX_FIELDS> for Style<'data> {
     type Fields = StyleFields;
 
     type Item<'a>
-     = Style<'a> where 'a: 'data;
+     = Style<'a>;
 
-    fn parse_from_fields(
-        key: &'data str,
-        fields: [(Self::Fields, OptionStr<'data>); MAX_FIELDS],
-    ) -> Option<Self::Item<'data>> {
+    fn parse_from_fields<'a>(
+        key: &'a str,
+        fields: [(Self::Fields, OptionStr<'a>); MAX_FIELDS],
+    ) -> Option<Self::Item<'a>> {
         if !key.eq_ignore_ascii_case("Style") {
             return None;
         }

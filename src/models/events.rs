@@ -57,16 +57,16 @@ impl Default for EventFields {
     }
 }
 
-impl<'data> LineItem<'data, MAX_FIELDS> for EventLine<'data> {
+impl<'data> LineItem<MAX_FIELDS> for EventLine<'data> {
     type Fields = EventFields;
 
     type Item<'a>
-     = EventLine<'a> where 'a: 'data;
+     = EventLine<'a>;
 
-    fn parse_from_fields(
-        key: &'data str,
-        fields: [(Self::Fields, OptionStr<'data>); MAX_FIELDS],
-    ) -> Option<Self::Item<'data>> {
+    fn parse_from_fields<'a>(
+        key: &'a str,
+        fields: [(Self::Fields, OptionStr<'a>); MAX_FIELDS],
+    ) -> Option<Self::Item<'a>> {
         let mut event = EventLine::default();
         event.is_comment = key.eq_ignore_ascii_case("Comment");
 
