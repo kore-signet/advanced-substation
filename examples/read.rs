@@ -1,10 +1,10 @@
 use ssa::{
     models::{
-        events::{self, EventLine},
+        events::{self, EventLine, EventLineParser},
         script_info::ScriptInfo,
-        style::{self, Style},
+        style::{self, Style, StyleParser},
     },
-    LineItem, SSAParser,
+    LineItemParser, SSAParser,
 };
 
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
 
     let style_section = loop {
         let section = parser.section().unwrap();
-        if Style::validate_section_name(section.title) {
+        if StyleParser::validate_section_name(section.title) {
             break section;
         } else {
             section.for_each(|_| ());
@@ -29,7 +29,7 @@ fn main() {
     };
 
     let style_parser = style_section
-        .as_stream_section::<{ style::MAX_FIELDS }, Style<'_>>()
+        .as_stream_section::<{ style::MAX_FIELDS }, StyleParser>()
         .unwrap();
 
     for style in style_parser {
@@ -39,7 +39,7 @@ fn main() {
     let event_parser = parser
         .section()
         .unwrap()
-        .as_stream_section::<{ events::MAX_FIELDS }, EventLine<'_>>()
+        .as_stream_section::<{ events::MAX_FIELDS }, EventLineParser>()
         .unwrap();
 
     for event in event_parser {

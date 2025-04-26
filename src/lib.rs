@@ -60,7 +60,7 @@ impl<'data, 'borrow> RawSectionIterator<'data, 'borrow> {
         S::parse(KeyValueSectionIter::new(self))
     }
 
-    pub fn as_stream_section<const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>>(
+    pub fn as_stream_section<const MAX_FIELDS: usize, L: LineItemParser<MAX_FIELDS>>(
         self,
     ) -> Option<LineStreamSectionIter<'data, 'borrow, MAX_FIELDS, L>> {
         LineStreamSectionIter::start(self)
@@ -122,7 +122,7 @@ impl<'data, 'borrow, Fields: FromStr> Iterator for KeyValueSectionIter<'data, 'b
     }
 }
 
-pub trait LineItem<const MAX_FIELDS: usize> {
+pub trait LineItemParser<const MAX_FIELDS: usize> {
     type Fields: FromStr + Default + Copy;
     type Item<'a>;
 
@@ -134,11 +134,15 @@ pub trait LineItem<const MAX_FIELDS: usize> {
     ) -> Option<Self::Item<'data>>;
 }
 
-pub struct LineStreamParser<const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> {
+pub trait LineItem<const MAX_FIELDS: usize> {
+    type Parser: LineItemParser<MAX_FIELDS>;
+}
+
+pub struct LineStreamParser<const MAX_FIELDS: usize, L: LineItemParser<MAX_FIELDS>> {
     field_order: [L::Fields; MAX_FIELDS],
 }
 
-impl<const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> LineStreamParser<MAX_FIELDS, L> {
+impl<const MAX_FIELDS: usize, L: LineItemParser<MAX_FIELDS>> LineStreamParser<MAX_FIELDS, L> {
     pub fn new(format_line: &str) -> Option<LineStreamParser<MAX_FIELDS, L>> {
         let mut field_order = [L::Fields::default(); MAX_FIELDS];
         for (idx, field) in format_line.split(',').enumerate() {
@@ -159,13 +163,13 @@ impl<const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> LineStreamParser<MAX_FIEL
     }
 }
 
-pub struct LineStreamSectionIter<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> {
+pub struct LineStreamSectionIter<'data, 'borrow, const MAX_FIELDS: usize, L: LineItemParser<MAX_FIELDS>> {
     pub title: &'data str,
     parser: LineStreamParser<MAX_FIELDS, L>,
     inner: RawSectionIterator<'data, 'borrow>,
 }
 
-impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>>
+impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItemParser<MAX_FIELDS>>
     LineStreamSectionIter<'data, 'borrow, MAX_FIELDS, L>
 {
     pub fn start(
@@ -190,7 +194,7 @@ impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>>
     }
 }
 
-impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItem<MAX_FIELDS>> Iterator
+impl<'data, 'borrow, const MAX_FIELDS: usize, L: LineItemParser<MAX_FIELDS>> Iterator
     for LineStreamSectionIter<'data, 'borrow, MAX_FIELDS, L>
 {
     type Item = L::Item<'data>;

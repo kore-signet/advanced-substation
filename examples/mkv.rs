@@ -1,7 +1,7 @@
-use ssa::{models::events::EventLine, LineStreamParser};
+use ssa::{models::events::{EventLine, EventLineParser}, LineItem, LineStreamParser};
 
 fn main() {
-    let parser: LineStreamParser<9, EventLine<'_>> = LineStreamParser::new(
+    let parser: LineStreamParser<9, EventLineParser> = LineStreamParser::new(
         "ReadOrder, Layer, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     )
     .unwrap();

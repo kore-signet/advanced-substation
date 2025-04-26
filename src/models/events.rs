@@ -4,7 +4,7 @@ use arraystring::ArrayString;
 use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
-use crate::LineItem;
+use crate::{LineItem, LineItemParser};
 use std::str::FromStr;
 
 use super::OptionStr;
@@ -59,7 +59,13 @@ impl Default for EventFields {
     }
 }
 
-impl<'data, const FIELDS: usize> LineItem<FIELDS> for EventLine<'data> {
+pub struct EventLineParser;
+
+impl<'a, const FIELDS: usize> LineItem<FIELDS> for EventLine<'a> {
+    type Parser = EventLineParser;
+}
+
+impl<const FIELDS: usize> LineItemParser<FIELDS> for EventLineParser {
     type Fields = EventFields;
 
     type Item<'a> = EventLine<'a>;

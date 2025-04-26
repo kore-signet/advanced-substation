@@ -4,7 +4,7 @@ use arraystring::ArrayString;
 use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
-use crate::LineItem;
+use crate::{LineItem, LineItemParser};
 
 use super::{Color, OptionStr};
 
@@ -85,7 +85,13 @@ impl Default for StyleFields {
     }
 }
 
-impl<'data> LineItem<MAX_FIELDS> for Style<'data> {
+pub struct StyleParser;
+
+impl<'a> LineItem<MAX_FIELDS> for Style<'a> {
+    type Parser = StyleParser;
+}
+
+impl LineItemParser<MAX_FIELDS> for StyleParser {
     type Fields = StyleFields;
 
     type Item<'a> = Style<'a>;
